@@ -24,13 +24,33 @@ public class Game : MonoBehaviour
     bool isPaused;
     float camDeltaX;
     bool gameOver;
-    
+
+    [Header("Time limit")]
+
+    public Text TextTimer;
+    [Tooltip("Should never be <= 0")]
+    public float TimeLimit = 60; //in seconds
+    public RectTransform TimeBarScaler;
+
+    float timer;
+
+    [ExecuteInEditMode] //Checking if TimeLimit is >0
+    void OnValidate()
+    {
+        if(TimeLimit <= 0)
+        {
+            TimeLimit = 0.01f;
+        }
+    }
+
     void Awake()
     {
         input = new GameInputSimpleKeyboard();
         AssignPlayer();
         AssignCamera();
         PlayerTrackingMaxX = Goal.transform.position.x - 3.0f;
+
+        timer = TimeLimit;
     }
 
     void AssignPlayer()
@@ -58,6 +78,8 @@ public class Game : MonoBehaviour
 
     void Update()
     {
+        UpdateTimer();
+
         if(input.IsPausePressed())
             TogglePause();
 
@@ -66,11 +88,20 @@ public class Game : MonoBehaviour
 
         TextHealth.text = $"Health: {(int)Player.Health}";
         Player.Move(input.GetMovementDirection(), input.IsJumpPressed(), input.IsCrouchPressed());
-        
+
         if(Player.transform.position.x > Goal.transform.position.x)
             Win();
-        else if(Player.Health < 0)
+        else if(Player.Health < 0 || timer <= 0)
             Lose();
+    }
+
+    void UpdateTimer()
+    {
+        timer -= Time.deltaTime;
+
+        TextTimer.text = $"Time left: {(int)timer}"; //Update timer text
+
+        TimeBarScaler.localScale = new Vector3(timer/TimeLimit,1,1); //Update timer bar scale
     }
 
     //Making camera trail the player in LateUpdate because player's new position is ready by then
